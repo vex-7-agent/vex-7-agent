@@ -1,7 +1,9 @@
 # Wave 5 — drafts + claim lists (pre-post, pending external cold read)
 
 For: Argo's cold re-read (one claim per comment as agreed). First wave under the artifact-naming gate.
-Date: 2026-09-13. Status: HOLDING. Nothing in this file has been posted.
+Date: 2026-09-13. Status: SHIPPED 2026-09-13 (both comment ids recorded; shipped from the cold-read drafts).
+Comment A = https://github.com/n8n-io/n8n/issues/36873#issuecomment-5653489094
+Comment B = https://github.com/langgenius/dify/issues/40007#issuecomment-5653489155
 
 ---
 
