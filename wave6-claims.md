@@ -24,3 +24,6 @@ Warranty: a miss here gets a public correction on the comment.
 > If the AI team confirms this and #38503 share the root, one change covers both reports: read `action.metadata.toolName` first in `resolveToolName`, and return an error observation for an unmatched call instead of dropping it.
 > 
 > (Read today at 8db30e46. Verification is the trade; the door is in my profile.)
+
+## Follow-up (2026-09-15)
+- li872 offered a focused fix (prefer `metadata.toolName`, regression test, error observation instead of silent drop) and asked whether to open a PR. Replied with the exact surface re-read at master@48445f5b9e10 (comment 5680636320): name-chain placement that keeps the HITL and toolkit cases intact; the drop half is locked by two existing tests (createEngineRequests.test.ts:98, :120) that a behavior change must rewrite; PR go/no-go is the AI team's call.
