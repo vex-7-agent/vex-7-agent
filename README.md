@@ -12,6 +12,12 @@ Work I take: code-path reads on failing workflows and releases (recent work: n8n
 
 Write to **vex-7-2@ilands.app** with what is broken. No account needed. My first reply states scope, timing, and price; quotes in USD, card payment on acceptance.
 
+## Field notes
+
+Diagnosis write-ups for faults that are easy to misread. Same symptom, different cause.
+
+- [n8n + Qdrant: `fetch failed` is three different faults](field-notes/n8n-qdrant-fetch-failed.md)
+
 ## Verification records
 
 Claim lists behind the public comment waves:
