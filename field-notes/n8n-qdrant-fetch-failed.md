@@ -23,11 +23,13 @@ Check: read the failing request URL in the execution log or the proxy log.
 
 Status on 2026-09-21: #38889 is open, awaiting a maintainer.
 
-## Fault 2: Node >= 26 plus an old Qdrant client
+## Fault 2: a client that pins undici v6, on a Node that embeds undici 8
 
-`@qdrant/js-client-rest` 1.16.2 builds its HTTP dispatcher from undici v6. The global `fetch` of Node >= 26 rejects such a dispatcher with `invalid onError method`, and every request surfaces as an opaque `fetch failed`. No Qdrant error, no HTTP status. Node 24 is fine.
+`@qdrant/js-client-rest` 1.16.2 depends on `undici: ^6.0.0` and builds its HTTP dispatcher from that copy. Node's global `fetch` is backed by the undici version embedded in the Node release. On Node >= 26 that is undici 8, which removed the legacy handler wrappers, so a v6 dispatcher is rejected with `invalid onError method` and every request surfaces as an opaque `fetch failed`. No Qdrant error, no HTTP status. Node 22 and Node 24 accept the same dispatcher; the break is at the undici 8 boundary.
 
-Fixed by PR [#37758](https://github.com/n8n-io/n8n/pull/37758) (merged 2026-09-04), which moves the pin from `^1.16.2` to `^1.19.0`. The PR reports the `n8n@2.38.2` image runs Node 26.7.0.
+This is a class of fault, not a one-off. Same fault, other projects: [n8n #37903](https://github.com/n8n-io/n8n/issues/37903) (closed 2026-09-08) named it for this node; the Vercel CLI hits it on every proxied command ([#17629](https://github.com/vercel/vercel/issues/17629)). General write-up: [a dispatcher from a different undici major](undici-dispatcher-major-mismatch.md).
+
+Fixed by PR [#37758](https://github.com/n8n-io/n8n/pull/37758) (merged 2026-09-04), which moves the catalog pin from `^1.16.2` to `^1.19.0` and removes the `undici` v6 catalog pin that made the mismatch possible. The PR reports the `n8n@2.38.2` image runs Node 26.7.0.
 
 Version boundary, checked on the tags:
 
@@ -49,10 +51,22 @@ curl -sv -H "api-key: $KEY" "$QDRANT_URL/collections"
 
 If that succeeds from your laptop but not from the n8n process, the fault is the path between them, not Qdrant.
 
+## Two things that look like the cause and are not
+
+**The compatibility warning.** The client prints one of these next to the failure:
+
+> Api key is used with unsecure connection. Failed to obtain server version. Unable to check client-server compatibility. Set checkCompatibility=false to skip version check.
+
+That is a `console.warn` in the client's own constructor. The version probe is fire-and-forget: `root({})` with a `.then(... console.warn ...)` and a `.catch(() => console.warn(...))`. It never throws, and it never blocks a request. `checkCompatibility=false` cannot change a request that already failed; the warning is a second symptom of the same failed fetch, and the knob people reach for does nothing.
+
+Issue [#37907](https://github.com/n8n-io/n8n/issues/37907) attributes this node's failure to the client "rejecting" Qdrant servers on 1.19.x. The shipped 1.16.2 source says otherwise: the check warns, and only warns. Verified in the package, `dist/cjs/qdrant-client.js`, constructor.
+
+**The version downgrade.** Dropping to Node 24, or holding n8n below 2.38.x, moves the runtime back below undici 8 so the dispatcher half stops. It addresses Fault 2 only, and it leaves you maintaining a pin.
+
 ## The three checks, in order
 
 1. Failing request URL in the log. Root path while the credential URL has a subpath -> Fault 1.
-2. `node --version` in the container and the error `cause`. Node >= 26 with `invalid onError method` -> Fault 2.
+2. `node --version` in the container, `node -p "process.versions.undici"`, and the error `cause`. Node >= 26 with `invalid onError method` -> Fault 2.
 3. curl from the n8n host. Fails there, works from your machine -> Fault 3.
 
 ## If none of the three lands
