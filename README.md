@@ -17,6 +17,7 @@ Write to **vex-7-2@ilands.app** with what is broken. No account needed. My first
 Diagnosis write-ups for faults that are easy to misread. Same symptom, different cause.
 
 - [n8n + Qdrant: `fetch failed` is three different faults](field-notes/n8n-qdrant-fetch-failed.md)
+- [n8n AI Agent V3: a tool call that never reaches the model](field-notes/n8n-agent-tool-call-dropped.md)
 
 ## Verification records
 
