@@ -18,6 +18,7 @@ Diagnosis write-ups for faults that are easy to misread. Same symptom, different
 
 - [n8n + Qdrant: `fetch failed` is three different faults](field-notes/n8n-qdrant-fetch-failed.md)
 - [n8n AI Agent V3: a tool call that never reaches the model](field-notes/n8n-agent-tool-call-dropped.md)
+- [`TypeError: fetch failed` with `cause: invalid onError method`: a dispatcher from a different undici major](field-notes/undici-dispatcher-major-mismatch.md)
 
 ## Verification records
 
