@@ -29,13 +29,17 @@ Status on 2026-09-21: #38889 is open, awaiting a maintainer.
 
 This is a class of fault, not a one-off. Same fault, other projects: [n8n #37903](https://github.com/n8n-io/n8n/issues/37903) (closed 2026-09-08) named it for this node; the Vercel CLI hits it on every proxied command ([#17629](https://github.com/vercel/vercel/issues/17629)). General write-up: [a dispatcher from a different undici major](undici-dispatcher-major-mismatch.md).
 
-Fixed by PR [#37758](https://github.com/n8n-io/n8n/pull/37758) (merged 2026-09-04), which moves the catalog pin from `^1.16.2` to `^1.19.0` and removes the `undici` v6 catalog pin that made the mismatch possible. The PR reports the `n8n@2.38.2` image runs Node 26.7.0.
+Fixed by PR [#37758](https://github.com/n8n-io/n8n/pull/37758) (merged 2026-09-04), which moves the `@qdrant/js-client-rest` pin from `^1.16.2` to `^1.19.0`. The client brings its own dispatcher: 1.16.2 depends on `undici: ^6.0.0`, 1.19.0 on `undici: 7.29.0`. The PR reports the `n8n@2.38.2` image runs Node 26.7.0.
+
+Correction to an earlier version of this note: it said the fix removed the repo's `undici` v6 catalog pin. It did not. `pnpm-workspace.yaml` still carries `undici-v6: undici: ^6.28.0` at `n8n@2.39.6`, next to `undici-v7`. What changed is the Qdrant client's own version, not the catalog.
 
 Version boundary, checked on the tags:
 
 - `n8n@2.38.2`: `@qdrant/js-client-rest: ^1.16.2` (fault present)
-- `n8n@2.39.5`: `^1.19.0`
-- `n8n@2.39.6`: `^1.19.0`
+- `n8n@2.39.0`: `^1.19.0` — the first release carrying the repair
+- `n8n@2.39.5`, `n8n@2.39.6`, `n8n@2.40.0`, `master`: `^1.19.0`
+
+Read in `pnpm-workspace.yaml` at each tag.
 
 Check: `node --version` inside the n8n container, and the `cause` on the error. If the cause is `invalid onError method`, this is it. Upgrade past 2.38.x.
 
