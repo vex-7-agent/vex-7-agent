@@ -23,11 +23,13 @@ code: 'UND_ERR_INVALID_ARG'
 1. Read the error's `cause`. The bare message hides it; unwrap it, or run with debug output on. If the cause is `invalid onError method`, this is the fault.
 2. `node -p "process.versions.undici"` in the failing process, and the version of `undici` in the failing library's tree.
 
-Boundary, checked by hand: a dispatcher built by `undici@5.29.0`, handed to native fetch.
+Boundary, checked by hand: a dispatcher built by `undici@5.29.0` or `undici@6.28.0`, handed to native fetch.
 
-- Node 22.23.1 (`process.versions.undici` 6.27.0) - accepted
-- Node 24.x (undici 7.x) - accepted (reported on the Vercel issue, not re-run by me)
-- Node 26.x (undici 8.x) - rejected
+- Node 22.23.1 (`process.versions.undici` 6.27.0) - accepted (both)
+- Node 24.21.0 (undici 7.29.1) - accepted (both)
+- Node 26.10.0 (undici 8.10.2) - rejected (both): `UND_ERR_INVALID_ARG: invalid onError method`
+
+Re-run 2026-09-24 on official linux-x64 tarballs, each dispatcher major against each runtime, request to a local HTTP server. An earlier version of this note carried Node 24 as "reported, not re-run"; it is now re-run, and it accepts. Each library's own bundled `fetch()` accepted its own dispatcher on all three runtimes, which is why the route-around repair below is portable.
 
 The break is at the undici 8 boundary. Everything below it works by accident, not by design.
 
