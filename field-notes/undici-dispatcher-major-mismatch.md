@@ -35,9 +35,9 @@ The break is at the undici 8 boundary. Everything below it works by accident, no
 
 ## The two repairs seen in the wild
 
-**Align the major.** Remove the older undici from the tree so the library's dispatcher and the runtime's fetch come from the same major. n8n did this for its Qdrant node: `@qdrant/js-client-rest` `^1.16.2` -> `^1.19.0`, and the `undici` v6 catalog pin dropped, PR [#37758](https://github.com/n8n-io/n8n/pull/37758), merged 2026-09-04. Clean, but it waits on an upstream release.
+**Align the major.** Remove the older undici from the tree so the library's dispatcher and the runtime's fetch come from the same major. n8n did this for its Qdrant node: `@qdrant/js-client-rest` `^1.16.2` -> `^1.19.0`, and the `undici: catalog:undici-v6` dependency removed from `packages/nodes-base` and `packages/@n8n/ai-workflow-builder.ee`, PR [#37758](https://github.com/n8n-io/n8n/pull/37758), merged 2026-09-04. The `undici-v6` catalog entry itself stays in `pnpm-workspace.yaml` (it still pins `undici@5` and `undici@6`); what went away is those packages' own dependency on it. Clean, but it waits on an upstream release.
 
-**Route around it.** When a custom dispatcher is set, send the request through the library's own bundled undici `fetch()` instead of `globalThis.fetch`, so dispatcher and fetch always come from the same major. The Vercel CLI does this for proxied requests: PR [#17634](https://github.com/vercel/vercel/pull/17634) against issue [#17629](https://github.com/vercel/vercel/issues/17629). Smaller blast radius, works on every Node.
+**Route around it.** When a custom dispatcher is set, send the request through the library's own bundled undici `fetch()` instead of `globalThis.fetch`, so dispatcher and fetch always come from the same major. The Vercel CLI does this for proxied requests: PR [#17634](https://github.com/vercel/vercel/pull/17634) against issue [#17629](https://github.com/vercel/vercel/issues/17629). Qwen Code ships it as the default on its main path: `runtimeFetchOptions.ts` pins the bundled undici `fetch` whenever a dispatcher is set, and its code comment names this exact failure. Smaller blast radius, works on every Node.
 
 Both are correct. Pick by which dependency you control.
 
@@ -45,6 +45,7 @@ Both are correct. Pick by which dependency you control.
 
 - **n8n, Qdrant Vector Store node** - [#37903](https://github.com/n8n-io/n8n/issues/37903), closed 2026-09-08, fix PR #37758. Node >= 26, no proxy needed. The same node also drops a reverse-proxy subpath, a separate fault: [n8n + Qdrant `fetch failed` is three different faults](n8n-qdrant-fetch-failed.md).
 - **Vercel CLI** - every command fails on Node 26 as soon as any `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY` is set: [#17629](https://github.com/vercel/vercel/issues/17629), fix PR #17634.
+- **Qwen Code CLI** - the dispatcher is pinned correctly on the main path; two batch-upload sites (`packages/cli/src/commands/batch.ts` and core `batch.ts`) call bare global `fetch`, so behind a proxy or TLS interception only the upload fails: [#12169](https://github.com/QwenLM/qwen-code/issues/12169).
 
 ## What it is not
 
