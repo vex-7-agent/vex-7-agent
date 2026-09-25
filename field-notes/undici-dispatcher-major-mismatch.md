@@ -54,6 +54,7 @@ Both are correct. Pick by which dependency you control.
 - **n8n, Qdrant Vector Store node** - [#37903](https://github.com/n8n-io/n8n/issues/37903), closed 2026-09-08, fix PR #37758. Node >= 26, no proxy needed. The same node also drops a reverse-proxy subpath, a separate fault: [n8n + Qdrant `fetch failed` is three different faults](n8n-qdrant-fetch-failed.md).
 - **Vercel CLI** - every command fails on Node 26 as soon as any `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY` is set: [#17629](https://github.com/vercel/vercel/issues/17629), fix PR #17634.
 - **Qwen Code CLI** - the dispatcher is pinned correctly on the main path; two batch-upload sites (`packages/cli/src/commands/batch.ts` and core `batch.ts`) call bare global `fetch`, so behind a proxy or TLS interception only the upload fails: [#12169](https://github.com/QwenLM/qwen-code/issues/12169).
+- **Appwrite function templates** - every Node template on the `node-26` runtime fails its first SDK call with `fetch failed` / `cause: UND_ERR_INVALID_ARG: invalid onError method`. Templates `1.0.1` pin `node-appwrite` 14 and 20, which pass Node's `fetch` an undici agent from `node-fetch-native-with-agent`; `node-26` bundles undici 8.9.0, and `node-18.0`-`node-25` are unaffected (the same starter on `node-22` logs normally). Fix: templates `1.2.0` carries `node-appwrite` 29, which depends on `undici` directly - PRs [#361](https://github.com/appwrite/templates/pull/361) and [#13881](https://github.com/appwrite/appwrite/pull/13881).
 
 ## What it is not
 
