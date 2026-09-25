@@ -20,7 +20,7 @@ code: 'UND_ERR_INVALID_ARG'
 
 ## The check, in two commands
 
-1. Read the error's `cause`. The bare message hides it; unwrap it, or run with debug output on. If the cause is `invalid onError method`, this is the fault.
+1. Read the error's `cause`. The bare message hides it; unwrap it, or run with debug output on. `invalid onError method`, or its sibling `invalid onRequestStart method`, is this fault; the string tells you which side sits on undici 8.
 2. `node -p "process.versions.undici"` in the failing process, and the version of `undici` in the failing library's tree.
 
 Boundary, checked by hand: a dispatcher built by `undici@5.29.0` or `undici@6.28.0`, handed to native fetch.
@@ -30,6 +30,14 @@ Boundary, checked by hand: a dispatcher built by `undici@5.29.0` or `undici@6.28
 - Node 26.10.0 (undici 8.10.2) - rejected (both): `UND_ERR_INVALID_ARG: invalid onError method`
 
 Re-run 2026-09-24 on official linux-x64 tarballs, each dispatcher major against each runtime, request to a local HTTP server. An earlier version of this note carried Node 24 as "reported, not re-run"; it is now re-run, and it accepts. Each library's own bundled `fetch()` accepted its own dispatcher on all three runtimes, which is why the route-around repair below is portable.
+
+Direction matters, and the cause names it. A dispatcher built by `undici@8` handed to an older runtime's native fetch fails the other way: same class, different method. Re-run 2026-09-25 on the same three runtimes, installed `undici@8.11.2`, request to a public HTTPS endpoint:
+
+- Node 22.23.3 (undici 6.28.1) - rejected: `UND_ERR_INVALID_ARG: invalid onRequestStart method`
+- Node 24.21.0 (undici 7.29.1) - rejected: `UND_ERR_INVALID_ARG: invalid onRequestStart method`
+- Node 26.10.0 (undici 8.10.2) - accepted
+
+Each library's own bundled `fetch()` accepted its own dispatcher on all three. So the handler interface changed at undici 8, and any pairing that straddles the 8 boundary fails; whichever side is 8 decides which method it complains about. In the wild: Ring (homebridge-ring) shipped an `undici` 8 `Agent` to `globalThis.fetch` and hit `invalid onRequestStart method` on Node 24.20.0; the fix imports `fetch` from the same `undici` package, PR [#1848](https://github.com/dgreif/ring/pull/1848).
 
 The break is at the undici 8 boundary. Everything below it works by accident, not by design.
 
@@ -50,7 +58,7 @@ Both are correct. Pick by which dependency you control.
 ## What it is not
 
 - Not the client/server version warning. `@qdrant/js-client-rest` 1.16.2 runs its compatibility probe fire-and-forget and only `console.warn`s when it fails. `checkCompatibility=false` cannot change a request that already failed; the warning is a second symptom of the same failed fetch.
-- Not a retry, a timeout, or a server upgrade. Downgrading Node to 24 or below hides it by moving the runtime back under undici 8.
+- Not a retry, a timeout, or a server upgrade. Downgrading Node hides it only when the library's dispatcher is the older side (n8n's Qdrant node on Node 26); when the library ships the newer undici, the same downgrade is the cause (Ring on Node 24). Fix the pairing, not the Node version.
 
 If the check above does not settle it, send four lines: the failing request, `node --version`, `process.versions.undici`, and the `undici` version in the failing library's tree.
 
