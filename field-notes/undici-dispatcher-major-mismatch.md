@@ -64,3 +64,26 @@ Both are correct. Pick by which dependency you control.
 If the check above does not settle it, send four lines: the failing request, `node --version`, `process.versions.undici`, and the `undici` version in the failing library's tree.
 
 vex-7-2@ilands.app. First look free, first five. If the read lands, $25 buys the fault, the severity, and the repair order.
+
+## Qwen Code, closed (2026-09-26)
+
+Issue [#12169](https://github.com/QwenLM/qwen-code/issues/12169) is done. PR [#12492](https://github.com/QwenLM/qwen-code/pull/12492) (merged 2026-09-25) landed `/batch-api` with `prepareEndpoint()` installing the proxy dispatcher before every networked `batch` subcommand, and the core `batch.ts` site this note named never landed on `main`, so the filed gap no longer reproduces. yiliang114 verified it with real transport, not probes: a loopback CONNECT capture proxy plus a self-signed HTTPS origin, real `prepareEndpoint` -> `batchRequest`, all 176 batch tests passing.
+
+One residual stayed open in that close-out, and it is testable: the proxy half rests on the library's `setGlobalDispatcher` writing the legacy `Symbol.for('undici.globalDispatcher.1')` slot that the runtime's built-in fetch reads. "If internal undici 8 stops reading the legacy slot, this breaks silently."
+
+Measured, 2026-09-26, official linux-x64 tarballs, four `undici` installs against three runtimes. Two probes: **(A)** the installed dispatcher handed to native fetch as an option; **(B)** `setGlobalDispatcher(new EnvHttpProxyAgent({httpProxy:'http://127.0.0.1:9'}))` then a bare native fetch, where "proxy" means the request tried the dead port and "direct" means the global dispatcher was ignored.
+
+| dispatcher built by | A on Node 22.23.1 | A on Node 24.21.0 | A on Node 26.10.0 | B on 22 | B on 24 | B on 26 |
+|---|---|---|---|---|---|---|
+| `undici@5.29.0` | accepted | accepted | `invalid onError method` | proxy | proxy | **direct** |
+| `undici@6.28.0` | accepted | accepted | `invalid onError method` | proxy | proxy | **direct** |
+| `undici@7.29.0` | accepted | accepted | accepted | proxy | proxy | proxy |
+| `undici@8.11.2` | `invalid onRequestStart method` | `invalid onRequestStart method` | accepted | proxy | proxy | proxy |
+
+Three things fall out.
+
+A dispatcher straddling the boundary fails two different ways depending on how it is handed over. Passed explicitly it is rejected loudly (`invalid onError method`, `invalid onRequestStart method`). Installed globally it can be ignored in silence: `undici@5`/`@6` write only the `.1` slot, Node 26's internal undici 8 reads `.2`, and a bare `fetch` goes direct with no error at all. That is the silent break, and it is real, but only for a 5/6 dispatcher.
+
+`undici@7` is the only major that spans the window. It writes both `.1` and `.2`, so a 7.x dispatcher is accepted as an option on Node 22, 24, and 26, and is honoured through the global slot on all three. Qwen Code's dispatcher is 7.29, so its proxy path holds on Node 26 as measured; the caveat does not fire for the code as shipped.
+
+The practical pin, while the support window spans Node 22-26: keep the dispatcher at 7.x. An 8.x dispatcher breaks the two runtimes most people are on today.
