@@ -87,3 +87,38 @@ A dispatcher straddling the boundary fails two different ways depending on how i
 `undici@7` is the only major that spans the window. It writes both `.1` and `.2`, so a 7.x dispatcher is accepted as an option on Node 22, 24, and 26, and is honoured through the global slot on all three. Qwen Code's dispatcher is 7.29, so its proxy path holds on Node 26 as measured; the caveat does not fire for the code as shipped.
 
 The practical pin, while the support window spans Node 22-26: keep the dispatcher at 7.x. An 8.x dispatcher breaks the two runtimes most people are on today.
+
+## undici 7 -> 8: three traps under a catalog bump
+
+A repo that pins undici once (a pnpm catalog entry, or one `overrides` rule) bumps every consumer at once, and the pair matrix above decides whether that is safe: an 8.x dispatcher handed to Node 22 or 24 is rejected with `invalid onRequestStart method`, while the same dispatcher handed to undici's own `fetch` never meets the boundary. So the route-around repair applies to the bump itself: wherever a custom dispatcher is set, call the library's own bundled `undici` `fetch`; leave every other path on `globalThis.fetch`.
+
+That swap moves two more faults into view, and neither is the fault you were fixing. All three measured 2026-09-30 on Node 22.23.1 (`process.versions.undici` 6.27.0) with `undici@8.11.2`, request to a local HTTP server.
+
+**Trap 1 - undici's `Response` is not the global `Response`.** `instanceof` is false; only the name matches.
+
+    const r = await undiciFetch(url, { dispatcher: new Agent() })
+    r instanceof Response                  // false
+    r.constructor.name                     // 'Response'
+    r.status; typeof r.headers.get         // 404, 'function'
+
+Every `instanceof Response` clause downstream - retry predicates, error mapping, body guards - now reads an undici response as "not an HTTP response". In a retry predicate the cost is silent: a 404 or 500 is classified as a transport error and retried. Repair: duck-type (`typeof r.status === 'number' && typeof r.headers?.get === 'function'`), or import `Response` from the same `undici` package.
+
+**Trap 2 - undici 8's `fetch` does not accept a global `Request`.** It throws before the request leaves:
+
+    await undiciFetch(new Request(url))    // TypeError: Failed to parse URL from [object Request]
+
+Repair: pass `request.url` plus an init built from the Request - method, headers, `redirect`, body.
+
+**Trap 3 - the body is single-use, and a redirect replays it.** `request.body` is a stream:
+
+    // stream body, 307 in front of it
+    TypeError: fetch failed
+      cause: Error  at makeNetworkError (undici/lib/web/fetch/response.js)
+                    at httpRedirectFetch (undici/lib/web/fetch/index.js)
+
+    // reusing the same stream without a redirect
+    TypeError: Response body object should not be disturbed or locked
+
+Buffered `Uint8Array` body, same 307: `200`, and the destination receives the payload byte for byte. Repair: derive the body from the final `Request` after hooks run - `new Uint8Array(await request.arrayBuffer())`, skip it when the length is 0 - or pass `duplex: 'half'` when streaming is deliberate.
+
+Worked case: Dify's CLI, catalog `undici` 7.30.0 -> 8.11.2 plus an `undici-types: 8.3.0` override, [PR #43104](https://github.com/langgenius/dify/pull/43104). The catalog entry is repo-level, but today the only consumer is `cli` (the other `undici` row in `pnpm-lock.yaml` belongs to `cheerio`), and `cli/package.json` pins `engines.node` to `^24.20.0` - exactly the runtime that rejects an 8.x dispatcher handed to native `fetch`. The revision in `cli/src/http/client.ts` calls undici's `fetch` whenever a dispatcher is set, and `cli/src/http/retry.ts` replaces its `instanceof Response` check with a duck-typed one. Both traps, one diff.
