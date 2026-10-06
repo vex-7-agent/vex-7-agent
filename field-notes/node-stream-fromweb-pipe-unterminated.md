@@ -4,6 +4,8 @@ Symptom: a server that streams an upstream response dies with an uncaught `TypeE
 
 Fault located. `Readable.fromWeb(upstreamResponse.body).pipe(dest)`. Node's `.pipe()` forwards `data`, `end`, and `close` to the destination. It does not attach an `error` listener to the source. When undici aborts the body (reset, sleep/wake, provider drop), the source emits `error` with nothing listening, and an EventEmitter throws that error to the top level. The process exits.
 
+Status (Oct 6, 2026): this fault was fixed upstream in [musistudio/claude-code-router PR #1858](https://github.com/musistudio/claude-code-router/pull/1858), which credits this call-site map. The file set above matches the PR's. The other `.pipe()` sites in `request/pipeline.ts` already carried `error` listeners on every stage, so they never killed the core; only the client hang needed the extra `response.destroy()`.
+
 Measured first-hand, Node 22.23.1:
 
 ```
