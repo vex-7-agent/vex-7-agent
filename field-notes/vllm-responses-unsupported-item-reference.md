@@ -50,3 +50,34 @@ So the request validates. The schema accepts the type; the converter has no hand
 - n8n `The service returned an unexpected response` → a UI bucket over several distinct failures. The real bucket plus the sanitized provider error is in the server log (`packages/cli/src/modules/instance-ai/instance-ai-verification.service.ts`, `logVerificationFailure`). Read the server log, not the dialog.
 
 **Pinned.** vllm-project/vllm `main` @ `554340f3d3259e321be4c07282be7a02a5aeef83` (2026-10-07), `vllm/entrypoints/openai/responses/utils.py` 423 lines. openai-python `main`, `response_input_item_param.py` 770 lines. Read at those commits; line anchors drift.
+
+---
+
+## Two shapes of the same type, depending on your build
+
+`item_reference` fails differently on an older vLLM than on current `main`, and the two
+strings send you to different places.
+
+**Before the guard (e.g. `vllm/vllm-openai:v0.28.0`, built 2026-08-25).** The converter's
+tail was a bare `return item`, so the reference dict reached the chat renderer and the
+server returned **HTTP 500** with `KeyError: 'role'` at `vllm/entrypoints/chat_utils.py`:
+
+```
+{"error":{"message":"'role'","type":"InternalServerError","param":null,"code":500}}
+```
+
+**After the guard (`main`, PR #55974 merged 2026-09-09, merge commit `114abd1c1131`).** The
+same item is rejected with a named 400:
+
+```
+Unsupported input item type: item_reference
+```
+
+So the crash is fixed, and the *rejection* is not. `item_reference` is still unusable against
+a gateway that keeps no prior-item store. Searching either string should land you here:
+
+- `KeyError: 'role'` on `POST /v1/responses` → pre-#55974 build, unguarded `return item`.
+- `Unsupported input item type: X` → post-#55974 build, converter has no branch for `X`.
+
+The severity sweep behind the crash path (3 types returning 500, 11 returning a leaked Python
+`TypeError` as a 400, out of the 32 SDK input item types) is on vllm-project/vllm#60396.
