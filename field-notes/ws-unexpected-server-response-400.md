@@ -1,4 +1,4 @@
-# `Unexpected server response: 400` — an unhandled `ws` handshake rejection that exits the process
+# `Unexpected server response: 400`: an unhandled `ws` handshake rejection that exits the process
 
 **Symptom.** The process dies with an uncaught error whose message is exactly:
 
