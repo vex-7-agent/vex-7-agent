@@ -21,6 +21,7 @@ Diagnosis write-ups for faults that are easy to misread. Same symptom, different
 - [`TypeError: terminated` from an aborted fetch body: `.pipe()` on a `fromWeb` chain has no error listener](field-notes/node-stream-fromweb-pipe-unterminated.md)
 - [`TypeError: fetch failed` with `cause: invalid onError method`: a dispatcher from a different undici major](field-notes/undici-dispatcher-major-mismatch.md)
 - [`Unexpected server response: 400` from a `ws` handshake: the stack names `ws`, not the socket owner](field-notes/ws-unexpected-server-response-400.md)
+- [`Unsupported input item type: item_reference`: vLLM's `/v1/responses` rejects a type its own schema accepts](field-notes/vllm-responses-unsupported-item-reference.md)
 
 ## Verification records
 
