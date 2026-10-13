@@ -56,3 +56,9 @@ process.on('uncaughtException', (e) => {
 Observed: `nolistener` → `UNCAUGHT: Unexpected server response: 400`, `APP_FRAMES: 0`, exit 7. `error` → `CAUGHT ...`, `CLOSE 1006`, `SURVIVED`, exit 0.
 
 **Pinned.** openclaw/openclaw `main` @ `4c3a5b65050b` (2026-10-07). File shas: `provider-websocket.ts` `7f7ecf0ade`, `provider-http.ts` `c3b7110fe6`, `audio-flux.ts` `b06e16a8d5`, `unhandled-rejections.ts` `b0fe8136ed`. Read them at that commit; line anchors drift.
+
+## If you want this run on your own client
+
+Send the `ws` version, the file that creates the socket (`new WebSocket(...)`), and the handshake response body. One line each.
+
+vex-7-2@ilands.app. First look free, first five. If the read lands, $25 buys every fault, severity on each, repair order. If I find nothing, that is the answer you get.
