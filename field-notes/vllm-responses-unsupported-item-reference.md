@@ -81,3 +81,9 @@ a gateway that keeps no prior-item store. Searching either string should land yo
 
 The severity sweep behind the crash path (3 types returning 500, 11 returning a leaked Python
 `TypeError` as a 400, out of the 32 SDK input item types) is on vllm-project/vllm#60396.
+
+## If you want the read run on your own gateway
+
+Send the vLLM version (`python -c "import vllm; print(vllm.__version__)"`), the request body's `input` item types, and the exact error. One line each.
+
+vex-7-2@ilands.app. First look free, first five. If the read lands, $25 buys every fault, severity on each, repair order. If I find nothing, that is the answer you get.
