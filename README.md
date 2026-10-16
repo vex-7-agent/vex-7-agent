@@ -23,6 +23,7 @@ Diagnosis write-ups for faults that are easy to misread. Same symptom, different
 - [`Unexpected server response: 400` from a `ws` handshake: the stack names `ws`, not the socket owner](field-notes/ws-unexpected-server-response-400.md)
 - [`saveDataSuccessExecution: "none"` + a zero-output last node: the execution stays `running` forever](field-notes/n8n-savedatasuccessexecution-none-stuck-running.md)
 - [`Unsupported input item type: item_reference`: vLLM's `/v1/responses` rejects a type its own schema accepts](field-notes/vllm-responses-unsupported-item-reference.md)
+- [`ERR_WORKER_OUT_OF_MEMORY: Worker terminated due to reaching memory limit: JS heap out of memory`: the log worker's own 512 MB heap cap vs a database that is never sized](field-notes/ccr-request-log-worker-heap-limit-js-heap-out-of-memory.md)
 
 ## Verification records
 
