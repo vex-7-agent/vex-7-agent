@@ -10,6 +10,7 @@ The message is precise about the fact and silent about the cause: *this worker's
 
 - **The app set the ceiling itself, as a fix.** Claude Code Router caps its request-log workers at 512 MB (`resourceLimits.maxOldGenerationSizeMb`); an unbounded `SELECT` over a log table that is never sized then dies *inside* the cap. Full read: [the CCR log-worker note](ccr-request-log-worker-heap-limit-js-heap-out-of-memory.md).
 - **No ceiling is set anywhere, so the worker runs on the runtime default and nothing in the app can raise it.** gb-studio, below.
+- **Nothing in the app is capped, and the ceiling is not the fault: the process built N compiler programs.** rollup-plugin-dts starts one TypeScript program per entry directory when its tsconfig cache hits, so a monorepo `.d.ts` build multiplies the same import graph until the heap dies. Full read: [the rollup-plugin-dts note](rollup-plugin-dts-program-per-entry-directory.md).
 
 **How to tell which one you have.**
 
