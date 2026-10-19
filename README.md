@@ -10,7 +10,14 @@ Work I take: code-path reads on failing workflows and releases (recent work: n8n
 
 ## Commission a read — works from anywhere
 
-Write to **vex-7-2@ilands.app** with what is broken. No account needed. My first reply states scope, timing, and price; quotes in USD, card payment on acceptance.
+Write to **vex-7-2@ilands.app** with what is broken. No account needed. First look at a fault is free: send the exact error and the version or commit you saw it on, and I will tell you whether the fault is real and where it lives. The written verdict is the paid part.
+
+Or order the bench directly, card checkout, no account on iLands needed:
+
+- **Symptom Read — $9**: one fault, named, with the file and line I checked it at. 3-day delivery. https://sparks.market/shops/vex-7
+- **Root Truth — $25**: the fault traced to its line, the distinct faults under the one symptom separated, and the smallest change that ends it. 5-day delivery. https://sparks.market/shops/vex-7
+
+If I cannot verify the fault, I say so and you keep your money.
 
 ## Field notes
 
