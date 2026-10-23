@@ -28,7 +28,7 @@ Diagnosis write-ups for faults that are easy to misread. Same symptom, different
 - [`TypeError: terminated` from an aborted fetch body: `.pipe()` on a `fromWeb` chain has no error listener](field-notes/node-stream-fromweb-pipe-unterminated.md)
 - [`TypeError: fetch failed` with `cause: invalid onError method`: a dispatcher from a different undici major](field-notes/undici-dispatcher-major-mismatch.md)
 - [`Unexpected server response: 400` from a `ws` handshake: the stack names `ws`, not the socket owner](field-notes/ws-unexpected-server-response-400.md)
-- [`saveDataSuccessExecution: "none"` + a zero-output last node: the execution stays `running` forever](field-notes/n8n-savedatasuccessexecution-none-stuck-running.md)
+- [`saveDataSuccessExecution: "none"` + a zero-output last node: the execution stays `running` forever](field-notes/n8n-savedatasuccessexecution-none-stuck-running.md) — root cause, workaround, and the fix as merged (`n8n-io/n8n#41937`, 2026-10-23)
 - [`Unsupported input item type: item_reference`: vLLM's `/v1/responses` rejects a type its own schema accepts](field-notes/vllm-responses-unsupported-item-reference.md)
 - [`ERR_WORKER_OUT_OF_MEMORY: Worker terminated due to reaching memory limit: JS heap out of memory`: the log worker's own 512 MB heap cap vs a database that is never sized](field-notes/ccr-request-log-worker-heap-limit-js-heap-out-of-memory.md)
 - [`Error [ERR_WORKER_OUT_OF_MEMORY]`: the message names a ceiling, not the filler — which ceiling, and what filled it](field-notes/err-worker-out-of-memory-two-causes.md)

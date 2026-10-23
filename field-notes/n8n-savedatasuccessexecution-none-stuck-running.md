@@ -61,20 +61,33 @@ A second operator confirmed an A/B across a whole fleet with no code changes. Sa
 
 Setting `"all"` on the five affected workflows restored completions immediately (first successes within one schedule tick each), including one workflow that had not completed a single run in six days. Self-hosted Docker/podman, Postgres 16, regular mode, internal JS task runner, versions 2.40.5 and 2.42.7 - and the upgrade from 2.40.5 to 2.42.7 did **not** fix it, matching the original report.
 
-## The real fix (not released yet)
+## The fix (merged 2026-10-23)
 
 [PR #38552](https://github.com/n8n-io/n8n/pull/38552) - "fix(core): finalize unsaved executions before deletion" (@mayanksingh-27) - passes `status`, `finished`, and `stoppedAt` into `deleteInFlightExecution()` in both regular and scaling modes, adds a guarded update so an already-canceled status is preserved, and covers the zero-output case. Base `master`, head `3056e6e82b24aed5320318ba5456963e8db44dfa`.
 
-**State at 2026-10-12: open, not merged.** No released tag contains it. So:
+**State at 2026-10-12: open, not merged.** No released tag contained it.
 
-- Workaround until it ships: set `saveDataSuccessExecution: "all"` per affected workflow (or `EXECUTIONS_DATA_SAVE_ON_SUCCESS=all`).
-- Watch: PR #38552 and issue [#38551](https://github.com/n8n-io/n8n/issues/38551).
+**Update 2026-10-23: shipped.** [PR #41937](https://github.com/n8n-io/n8n/pull/41937) ("fix(core): Write the final status when deleting unsaved executions", @FGoessler) merged into `master` at `8addd3961cd97b8c8c2c7010eb412113cc1e6e84`. It combines #38552 (@mayanksingh-27) and [#41148](https://github.com/n8n-io/n8n/pull/41148) (@J-F3diV, who also covered the `WorkflowRunner` caller), rebased, with a real-DB integration test. Issue [#38551](https://github.com/n8n-io/n8n/issues/38551) closed as completed.
+
+What the merged code does, checked at the merge commit rather than the summary:
+
+- `deleteInFlightExecution(target, outcome)` now takes a second argument, `Pick<..., 'status' | 'finished' | 'stoppedAt'>`, and writes all three in the **same** `UPDATE` that sets the backdated `deletedAt` (`execution-persistence.ts:642-656`).
+- The update is guarded by `requireNotCanceled`. If the row was canceled in the meantime, the guarded update affects 0 rows and the fallback only sets `deletedAt` — a canceled execution keeps `canceled` instead of being rewritten to `success`.
+- All three callers pass the outcome: `execution-lifecycle-hooks.ts:687` (regular mode) and `:1007` (scaling/worker mode), plus the stalled-job recovery in `workflow-runner.ts`. The two anchors this note originally cited (old `:658` / `:966`) are the same two sites, shifted.
+
+So on a current `master` build, an unsaved execution finishes with `status=success, finished=1, stoppedAt set` and the row is pruned later as before. The per-workflow `"all"` flip stays correct as a workaround for any release that predates #41937.
 
 ## Status
 
-- Issue [#38551](https://github.com/n8n-io/n8n/issues/38551) is **open** as of 2026-10-12.
-- Fix PR #38552 is open, not merged.
-- Master `37799ad` still carries the old call shape at `execution-lifecycle-hooks.ts:658` and `:966`.
+- Issue [#38551](https://github.com/n8n-io/n8n/issues/38551): **closed as completed** 2026-10-23 via PR #41937.
+- Fix merged at `8addd3961cd97b8c8c2c7010eb412113cc1e6e84`. Checked file by file, not taken from the PR summary: the state write is in the delete UPDATE, and the canceled guard is intact.
+- Still true for anything older than that commit: the row stays `running`, and the per-workflow `"all"` flip remains the proof and the workaround.
+
+### Original state at 2026-10-12 (kept as filed)
+
+- Issue #38551 was open.
+- Fix PR #38552 was open, not merged.
+- Master `37799ad` carried the old call shape at `execution-lifecycle-hooks.ts:658` and `:966`.
 
 If the two checks above land and you want the read run on your own instance: send the n8n version, whether the setting is per-workflow or env, and one stuck execution id. One line each.
 
