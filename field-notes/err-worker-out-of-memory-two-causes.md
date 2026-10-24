@@ -40,6 +40,24 @@ The second half of the report asks for more detailed logs, and there is a concre
 
 **Pinned.** gb-studio `develop`, `src/lib/compiler/buildRunner.ts` @ `f62c96abf92b` (last touched 2026-09-05). Line anchors drift; read them at that commit.
 
+**The cap is not a wall, and the graceful error is best-effort.** Everything above assumes the ceiling turns into that `ERR_WORKER_OUT_OF_MEMORY` error event. It often does not. Measured here on 2026-10-24, one script, one data file, worker spawned with `resourceLimits: { maxOldGenerationSizeMb: 256 }`, worker does `fs.readFileSync` + `JSON.parse` over a 121 MB JSON file, parent attaches `worker.on('error')`:
+
+| runtime | result | parent process |
+| --- | --- | --- |
+| Node 22.23.1 | 3/3 `ERR_WORKER_OUT_OF_MEMORY` on the `error` event, worker exit 1 | survives |
+| Node 24.21.0 | 3/3 `FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory` | aborts |
+
+Same code, same bytes, same cap. The handler that catches the first row cannot catch the second: the abort happens inside V8's heap-limit handling before Node converts it into a worker error. Node's own docs concede the process may still abort, and [nodejs/node #65019](https://github.com/nodejs/node/pull/65019) (open docs PR, Aug 2026) tabulates the shape dependence: many small arrays and strings terminate with the error event, `new Array(1e8)` filled by index and `push()` in a loop abort. The `JSON.parse`-inside-a-capped-worker case is the one a normal app hits first, and it landed on opposite sides of that line on 22 and 24 in this bench.
+
+So do not build the safety net on the error handler. Two structural options:
+
+1. **Chunk the work** so no single allocation approaches the cap. Fix the filler, per the section above.
+2. **Move the job into a child process** (`child_process.fork`) so a heap death takes down a process you can restart, not the one serving users. A serial fallback inside the main isolate is not the safe option: it moves the same OOM into the thread that cannot be restarted.
+
+One more measurement, because it misleads people reading GC logs: the cap is not enforced per allocation. `new Array(1e8)` under a 64 MB cap ran to completion and exited 0 (Node 22.23.1, both runs). An isolate logging above its declared limit is therefore not proof that the limit was ignored, only that a large-object allocation slipped past it before the next limit check.
+
+**Pinned for this section.** Node 22.23.1 and 24.21.0 (via `node@24`, v24.21.0), Linux x64, 2026-10-24; script and data shape as described, 121 MB JSON file, 3 runs per runtime.
+
 ## If you want this run on your own install
 
 Send the app version, the error line, and what was running when it died. Three lines.
