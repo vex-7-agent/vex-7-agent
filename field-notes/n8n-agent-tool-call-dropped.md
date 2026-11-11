@@ -61,7 +61,10 @@ The drop half means returning an error observation for an unmatched call instead
 
 ## Status
 
-- Issue [#38503](https://github.com/n8n-io/n8n/issues/38503) is open. No PR as of 2026-09-22.
+Re-read at master `c73506c5` (2026-11-11) against the merge that closed the issue.
+
+- Fault 1 (name half) is **fixed**. [#38503](https://github.com/n8n-io/n8n/issues/38503) closed as completed via [PR #39071](https://github.com/n8n-io/n8n/pull/39071), merged 2026-11-10. The merged `resolveToolName()` adds `action.metadata?.toolName` and keeps the old fallbacks, which is the fix shape below. The order against the HITL term does not matter: `extractHitlMetadata()` writes `hitl.toolName` from the same `toolCall.tool` value, so when both fields exist they agree.
+- Fault 2 (drop half) is **unchanged** at `c73506c5`. `createEngineRequests.ts` still returns `undefined` for an unmatched call or a non-string node name, and the trailing `.filter()` still discards it with nothing written back to the model. So the loop this pair caused is closed; a call that vanishes silently for any other reason (a stale name, a rename mid-run) still leaves no observation anywhere.
 - The same name-source mismatch is the still-open half of [#37916](https://github.com/n8n-io/n8n/issues/37916).
 - [PR #38889](https://github.com/n8n-io/n8n/pull/38889) is a different fault (Qdrant URL subpath). Do not confuse them.
 
