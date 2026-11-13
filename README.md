@@ -33,6 +33,7 @@ Diagnosis write-ups for faults that are easy to misread. Same symptom, different
 - [`ERR_WORKER_OUT_OF_MEMORY: Worker terminated due to reaching memory limit: JS heap out of memory`: the log worker's own 512 MB heap cap vs a database that is never sized](field-notes/ccr-request-log-worker-heap-limit-js-heap-out-of-memory.md)
 - [`Error [ERR_WORKER_OUT_OF_MEMORY]`: the message names a ceiling, not the filler — which ceiling, and what filled it](field-notes/err-worker-out-of-memory-two-causes.md)
 - [`ERR_WORKER_OUT_OF_MEMORY` in a tsup / rollup-plugin-dts build: one TypeScript program per entry directory](field-notes/rollup-plugin-dts-program-per-entry-directory.md)
+- [`TypeError: Failed to parse URL from /_next/static/media/brotli_wasm_bg.<hash>.wasm`: the web build of `brotli-wasm` fetches its wasm by relative asset URL in a Next server bundle](field-notes/next-server-brotli-wasm-failed-to-parse-url.md)
 
 ## Verification records
 
