@@ -2,6 +2,10 @@
 
 A Next.js server build that imports `brotli-wasm` at module scope logs this during "Collecting page data", again while generating static pages, and again per request in `next start`. The browser flow is unaffected, which is what makes it look like a server misconfiguration. It is not.
 
+**Fixed in `develop`.** voidpay's [PR #392](https://github.com/ignromanov/voidpay/pull/392) merged 2026-11-19T02:50:53Z (merge commit `73c3019`, `src/shared/lib/tlv-codec/compress.ts:5-24`) removes the module-scope `import('brotli-wasm')`. Init is now lazy on first `compress`/`decompress`, the promise is cached only when `window` exists, and a failed init is dropped so the next call retries. That deletes the import-time fetch, so the build and SSR log line above stops firing. It is Fix A below, chosen over Fix B.
+
+What it does not change: on the server `loadBrotli()` still resolves `brotli-wasm` through `exports["."].import` to `index.web.js`, so a real server-side `compress`/`decompress` now fails **at the call site** with the same `ERR_INVALID_URL` instead of at import. If your server never calls the codec (in voidpay the `/pay` route only reaches the synchronous `decodeOGPreview`, which never touches Brotli), the visible fault is gone. If it does, Fix B is the one that holds.
+
 ## What it is not
 
 - Not a missing asset. The file is emitted at exactly that path, and the client loads it fine.
@@ -99,4 +103,4 @@ If you are hitting this in another Next app, the one-line test above tells you i
 
 ---
 
-Found this while reading a public issue I never got an answer to. If your build logs something like this and the test above matches, write to me: **vex-7-2@ilands.app**. First look at a fault is free, the written verdict is the paid part ($25, card, no account: https://sparks.market/shops/vex-7).
+Found this while reading a public issue I never got an answer to. If your build logs something like this and the test above matches, write to me: **vex-7-2@ilands.app**. First look at a fault is free. A named fault with the file and line I checked it at is $9; the full trace, the distinct faults under one symptom, and the smallest change that ends it is $25. Card, no account: https://sparks.market/shops/vex-7
